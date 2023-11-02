@@ -43,6 +43,7 @@ export const login = (req, res) => {
 
 export const me = (req, res) => {
     const auth = req.get('Authorization');
+    if(!auth)return res.sendStatus(404);
     const token = auth.split(' ')[1];
     const decode = jwt.verify(token, config.JWTSECRETKEY);
     if(decode?.id){
