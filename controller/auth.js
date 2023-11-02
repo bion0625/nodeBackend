@@ -1,11 +1,12 @@
 import bcrypt from 'bcrypt';
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
 
 let users = [];
 
 const Schema = new mongoose.Schema({
-    username: {type: String},
+    username: {type: String, unique: true},
     password: {type: String},
     name: {type: String},
     createdAt: {type: Date, default: Date.now},
@@ -17,13 +18,25 @@ const User = mongoose.model('User', Schema);
 
 export const signup = async (req, res) => {
     const {username, password, name} = req.body;
-    return User.create({username, password, name, delete: false}).then(data => {
-        const {id} = data;
-        return res.json({id});
-    });
+    return bcrypt.hash(password, config.HASHNUMBER).then(hashed =>{
+        return User.create({username, password:hashed, name, delete: false}).then(data => {
+            const {id} = data;
+            const token = jwt.sign({id}, config.JWTSECRETKEY, {expiresIn:config.JWTEXPIRES});
+            return res.json({token});
+        });
+    })
 };
 
 export const login = (req, res) => {
-    console.log('ENTER MAIN');
-    return res.end();
+    const {username, password} = req.body;
+    return User.findOne({username}).then(user => {
+        return bcrypt.compare(password, user.password).then(loginCheck => {
+            if(loginCheck){
+                const token = jwt.sign({id:user.id}, config.JWTSECRETKEY, {expiresIn:config.JWTEXPIRES});
+                return res.json({token});
+            }else{
+                return res.sendStatus(404);
+            }
+        })
+    })
 };
