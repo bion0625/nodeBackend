@@ -42,10 +42,11 @@ export const login = (req, res) => {
 };
 
 export const me = (req, res) => {
-    const auth = req.get('Authorization')
+    const auth = req.get('Authorization');
     const token = auth.split(' ')[1];
     const decode = jwt.verify(token, config.JWTSECRETKEY);
     if(decode?.id){
+        req.userId = decode.id;
         return res.status(200).json({id:decode.id, token});
     }else{
         return res.sendStatus(404);
